@@ -1,0 +1,22 @@
+app:
+  name: order-service
+  env: dev
+postgres:
+  host: "localhost"
+  port: "5432"
+  username: "postgres"
+  password: "azamat"
+  database: "mydatabase"
+  sslmode: "disable"
+orderserver:
+  http:
+    host: "localhost"
+    port: "8080"
+productserver:
+  http:
+    host: "localhost"
+    port: "8081"
+userserver:
+  http:
+    host: "localhost"
+    port: "8082"
