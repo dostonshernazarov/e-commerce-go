@@ -1,0 +1,43 @@
+syntax="proto3";
+
+option go_package="./protos";
+
+
+service ProductService {
+    rpc CreateProduct(ProductInfo) returns(ProductID);
+    rpc GetProducts(Empty) returns (stream ProductWithID);
+    rpc GetProductByID (ProductID) returns(ProductWithID);
+    rpc UpdateProductByID(ProductInfo) returns(ProductResponse);
+    rpc DeleteProductByID(ProductID)returns(ProductResponse);
+}
+
+message Empty{}
+
+message ProductInfo {
+    string name = 1;
+    string category_name = 2;
+    int32 quantity = 3;
+    float price = 4;
+    string created_at = 5;
+    string updated_at = 6;
+    map<string, string> details = 7;
+}
+
+message ProductWithID {
+    string id = 1;
+    string name = 2;
+    string category_name = 3;
+    int32 quantity = 4;
+    float price = 5;
+    string created_at = 6;
+    string updated_at = 7;
+    map<string, string> details = 8;
+}
+
+message ProductID {
+    string id = 1;
+}
+
+message ProductResponse{ 
+    string message = 1;
+}

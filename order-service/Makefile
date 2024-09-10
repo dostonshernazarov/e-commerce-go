@@ -1,26 +1,29 @@
 gen-order:
 	@protoc \
-	--go_out=. \
-	--go-grpc_out=. \
+	--proto_path=../e-commerce-proto \
+	--go_out=./protos \
+	--go-grpc_out=./protos \
 	--go_opt=paths=source_relative \
 	--go-grpc_opt=paths=source_relative \
-	./protos/order/order.proto
+	../e-commerce-proto/order/order.proto
 
 gen-user:
 	@protoc \
-	--go_out=. \
-	--go-grpc_out=. \
+	--proto_path=../e-commerce-proto \
+	--go_out=./protos \
+	--go-grpc_out=./protos \
 	--go_opt=paths=source_relative \
 	--go-grpc_opt=paths=source_relative \
-	./protos/user/user.proto
+	../e-commerce-proto/user/user.proto
 
 gen-product:
 	@protoc \
-	--go_out=. \
-	--go-grpc_out=. \
+	--proto_path=../e-commerce-proto \
+	--go_out=./protos \
+	--go-grpc_out=./protos \
 	--go_opt=paths=source_relative \
 	--go-grpc_opt=paths=source_relative \
-	./protos/product/product.proto
+	../e-commerce-proto/product/product.proto
 
 
 CURRENT_DIR := $(shell pwd)
