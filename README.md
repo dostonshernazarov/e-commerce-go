@@ -71,5 +71,33 @@ Before starting the project, make sure you have the following installed:
    cd e-commerce-go
 
 2. **Build and Run with Docker Compose:** To run the entire system using Docker Compose, execute the following:
-```docker-compose up --build```
+   ```bash
+   docker-compose up --build
+   
+3. **Services:**
+
+API Gateway: http://localhost:8085
+Jaeger UI: http://localhost:16686 (for tracing)
+MinIO: http://localhost:9000 (default user: `minioadmin`, password: `minioadmin`)
+
+4. **Environment Variables:** Make sure to configure environment variables as per your system requirements. Some default values are provided in the `docker-compose.yml`.
+
+5. **Migrations:** Database migrations for the PostgreSQL services (User, Order, Comment) are handled via the `migrate` service:
+   ```bash
+   docker-compose run migrate_user
+   docker-compose run migrate_order
+   docker-compose run migrate_comment
+
+## Key Features
+ - **Microservices:** Each service is independently deployable and scalable.
+ - **RESTful API:** Every service follows REST principles, making it easy to interact with external clients.
+ - **Message Queuing:** Kafka and Redis are used for asynchronous communication between services.
+ - **Database:** PostgreSQL for relational data (Users, Orders, Comments), MongoDB for document-based data (Products).
+ - **Tracing & Monitoring:** Integrated with OpenTelemetry and Jaeger for distributed tracing.
+
+## Development
+1. **Install dependencies:** Navigate to each service directory and run:
+   ```bash
+   go mod tidy
+
 
