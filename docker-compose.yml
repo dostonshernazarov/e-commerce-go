@@ -1,0 +1,300 @@
+version: '3.8'
+
+services:
+  api_gateway:
+    build: ./api_gateway
+    container_name: api_gateway1
+    ports:
+      - 8085:8085
+    depends_on:
+      user-service:
+        condition: service_started
+      product_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+      comment_service:
+        condition: service_started
+      notification_service:
+        condition: service_started
+      broker:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+
+    networks:
+      - mynetwork
+
+  user_service:
+    build: ./user_service
+    container_name: user_service_container
+    image: user_service_image
+    environment:
+      - PG_URL=postgres://postgres:2005@user_postgres:5432/user?sslmode=disable
+    ports:
+      - 8080:8080
+    depends_on:
+      user_postgres:
+        condition: service_started
+      migrate_user:
+        condition: service_started
+      broker:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+  product_service:
+    build: ./product_service
+    container_name: product_service_container
+    image: product_service_image
+    ports:
+      - 8081:8081
+    depends_on:
+      mongo:
+        condition: service_started
+    networks:
+      - mynetwork
+
+  order_service:
+    build: ./order_service
+    container_name: order_service_container
+    image: order_service_image
+    environment:
+      - PG_URL=postgres://postgres:2005@order_postgres:5432/order?sslmode=disable
+    ports:
+      - 8082:8082
+    depends_on:
+      order_postgres:
+        condition: service_started
+      broker:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+  comment_service:
+    build: ./comment_service
+    container_name: comment_service_container
+    image: comment_service_image
+    environment:
+      - PG_URL=postgres://postgres:2005@comment_postgres:5432/comment?sslmode=disable
+    ports:
+      - 8084:8084
+    depends_on:
+      comment_postgres:
+        condition: service_started
+    networks:
+      - mynetwork
+
+  notification_service:
+    build: ./notification_service
+    container_name: notification_service_container
+    image: notification_service_image
+    ports:
+      - "8083:8083"
+    depends_on:
+      redis:
+        condition: service_started
+    networks:
+      - mynetwork
+
+  jaeger-all-in-one:
+    container_name: jaeger-all-in-one
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+    networks:
+      - db
+
+  # Collector
+  otel-collector:
+    container_name: otel-collector
+    image: ${OTELCOL_IMG}
+    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+    networks:
+      - db
+    depends_on:
+      - jaeger-all-in-one
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27019:27017"
+    networks:
+      - mynetwork
+
+  minio:
+    image: docker.io/bitnami/minio:2024
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    networks:
+      - cv
+    volumes:
+      - 'minio_data:/data'
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_DEFAULT_BUCKETS=e-commerce
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  broker:
+    image: apache/kafka:latest
+    container_name: kafka_broker
+    ports:
+      - "9092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    networks:
+      - mynetwork
+
+  user_postgres:
+    image: postgres:14-alpine
+    container_name: user_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2005
+      POSTGRES_DB: user
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+      - ./user_service/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user || exit 1"]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - mynetwork
+
+  migrate_user:
+    image: migrate/migrate
+    volumes:
+      - ./user_service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://postgres:2005@user_postgres:5432/hotel?sslmode=disable", "up"]
+    depends_on:
+      user_postgres:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+  order_postgres:
+    image: postgres:14-alpine
+    container_name: order_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2005
+      POSTGRES_DB: order
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+      - ./order_service/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d order || exit 1"]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - mynetwork
+
+  migrate_order:
+    image: migrate/migrate
+    volumes:
+      - ./order_service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://postgres:2005@order_postgres:5432/booking?sslmode=disable", "up"]
+    depends_on:
+      order_postgres:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+  comment_postgres:
+    image: postgres:14-alpine
+    container_name: comment_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2005
+      POSTGRES_DB: comment
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - comment-db-data:/var/lib/postgresql/data
+      - ./comment_service/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d comment || exit 1"]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - mynetwork
+
+  migrate_comment:
+    image: migrate/migrate
+    volumes:
+      - ./comment_service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://postgres:2005@comment_postgres:5432/booking?sslmode=disable", "up"]
+    depends_on:
+      comment_postgres:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+  redis:
+    container_name: redis_container
+    image: redis:latest
+    ports:
+      - "6378:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG || exit 1"]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  user-db-data:
+  product-db-data:
+  order-db-data:
+  comment-db-data:
