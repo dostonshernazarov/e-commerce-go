@@ -1,0 +1,15 @@
+service:
+  host: localhost
+  port: 8001
+
+postgres:
+  host: postgres
+  password: 1
+  dbname: userDB
+  port: 5632
+
+redis:
+  host: localhost
+  port: 6379
+
+
