@@ -70,4 +70,6 @@ Before starting the project, make sure you have the following installed:
    git clone https://github.com/dostonshernazarov/e-commerce-go.git
    cd e-commerce-go
 
-2. **Build and Run with Docker Compose: To run the entire system using Docker Compose, execute the following:**
+2. **Build and Run with Docker Compose:** To run the entire system using Docker Compose, execute the following:
+```docker-compose up --build```
+
