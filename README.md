@@ -100,4 +100,17 @@ MinIO: http://localhost:9000 (default user: `minioadmin`, password: `minioadmin`
    ```bash
    go mod tidy
 
+2. **Run services locally:** Each microservice can be run locally for development:
+   ```bash
+   go run main.go
+
+## Future Improvements
+ - Add gRPC for internal communication between microservices.
+ - Implement more advanced notification mechanisms.
+ - Extend tracing and logging.
+ - Add unit tests and integration tests.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
 
