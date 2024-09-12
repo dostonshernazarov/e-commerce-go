@@ -57,4 +57,3 @@ message CategoryName {
 message ListProducts {
     repeated ProductWithID listproducts =1;
 }
-

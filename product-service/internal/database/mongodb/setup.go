@@ -19,3 +19,4 @@ func NewMongoRepo(mongo_url string) (*MongoRepo, error) {
 	}
 	return &MongoRepo{client}, nil
 }
+

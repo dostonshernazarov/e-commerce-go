@@ -132,11 +132,11 @@ func (m MongoRepo) GetProductByCategoryFromMongo(ctx context.Context, req *ppb.C
 	if err := cursor.All(ctx, &list); err != nil {
 		return nil, fmt.Errorf("failed to cursor all  products by category : %v", err)
 	}
-	
+
 	var listProducts ppb.ListProducts
 	for i, v := range list {
 		listProducts.Listproducts = append(listProducts.Listproducts, &ppb.ProductWithID{
-			Id:          list[i].ID.Hex() ,
+			Id:           list[i].ID.Hex(),
 			Name:         v.Name,
 			CategoryName: v.CategoryName,
 			Price:        v.Price,
