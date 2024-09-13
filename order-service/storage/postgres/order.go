@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"order-service/internal/client/product"
 	"order-service/internal/client/user"
 	orderspb "order-service/protos/order"
 	"time"
@@ -16,15 +17,15 @@ func (o *OrderRepo) CreateOrders(req *orderspb.CreateOrdersRequest) (*orderspb.O
 		return nil, err
 	}
 
-	// for _, p := range req.Products {
-	// 	id, err := product.ProductClinet(p)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if id == 0 {
-	// 		return nil, fmt.Errorf("not found product")
-	// 	}
-	// }
+	for _, p := range req.Products {
+		id, err := product.ProductClinet(p)
+		if err != nil {
+			return nil, err
+		}
+		if id == "0" {
+			return nil, fmt.Errorf("not found product")
+		}
+	}
 
 	res := &orderspb.Orders{}
 	var created_at, updated_at time.Time
