@@ -1,18 +1,20 @@
 package postgres
 
 import (
+	"fmt"
+	"order-service/internal/client/user"
 	orderspb "order-service/protos/order"
 	"time"
 )
 
 func (o *OrderRepo) CreateOrders(req *orderspb.CreateOrdersRequest) (*orderspb.OrdersResponse, error) {
-	// id, err := user.UserClinet(int(req.UserId))
-	// if err != nil {
-	// 	if id == 0 {
-	// 		return nil, fmt.Errorf("not found user")
-	// 	}
-	// 	return nil, err
-	// }
+	id, err := user.UserClinet(req.UserId)
+	if err != nil {
+		if id == "0" {
+			return nil, fmt.Errorf("not found user")
+		}
+		return nil, err
+	}
 
 	// for _, p := range req.Products {
 	// 	id, err := product.ProductClinet(p)
@@ -26,7 +28,7 @@ func (o *OrderRepo) CreateOrders(req *orderspb.CreateOrdersRequest) (*orderspb.O
 
 	res := &orderspb.Orders{}
 	var created_at, updated_at time.Time
-	err := o.db.QueryRow("insert into orders(user_id, location,status) values ($1,$2,$3) returning id, created_at, updated_at", req.UserId, req.Location, req.Status).Scan(
+	err = o.db.QueryRow("insert into orders(user_id, location,status) values ($1,$2,$3) returning id, created_at, updated_at", req.UserId, req.Location, req.Status).Scan(
 		&res.Id,
 		&created_at,
 		&updated_at,
